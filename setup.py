@@ -32,8 +32,6 @@ checkin_url = "https://www.utica.edu/apps/covid-19-screening/covid19screening.cf
 main_file_name = "Auto_Checkin"
 path_to_crontab = "/etc/crontab"
 
-iftttInfo= "https://ifttt.com/maker_webhooks"
-
 # Vars to be modified later
 prog_path = ""
 UC_user = ""
