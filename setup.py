@@ -48,9 +48,7 @@ carrier = ""
 print("\n\033[32;1;4mAttempting UC-auto-checkin setup...\033[0m\n")
 
 print("Installing BeautifulSoup4...")
-
-# TODO update method of pip use? warns it'll be depreciated soon, but works for now.
-pipmain(['install', 'beautifulsoup4'])
+subprocess.run(["pip3", "install", "beautifulsoup4"])
 
 # Set prog_path (script file dir)
 while prog_path == "":
