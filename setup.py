@@ -11,26 +11,14 @@ if os.geteuid() != 0:
     print("\033[31;1;1mFailed!\033[0m Script needs to be run as root/sudo!")
     exit()
 
-
-
+# Global vars
 main_file_name = "Auto_Checkin"
-cronJob = "1 150 UC-AutoCheckin python3 " + prog_path + main_file_name+ ".py\n"
-anacron_path="/etc/anacrontab"
-
-# Vars to be modified later
-prog_path = ""
-UC_user = ""
-UC_pass = ""
-notif = ""
-notif_ifttt = ""
-notif_ifttt_key = ""
-notif_email = ""
-notif_pass = ""
-notif_addr = ""
-notif_num = ""
-carrier = ""
 
 def makePaths():
+    # Init empty vars
+    global prog_path
+    prog_path = ""
+
     # Set prog_path (script file dir)
     while prog_path == "":
         prog_path_prompt = input("\nDesired path for script files to live in (default is current dir): ")
@@ -62,17 +50,27 @@ def makePaths():
         os.mkdir(prog_path + "Logging/")
 
 def setURLs():
+    # Init vars
+    global login_url, checkin_url
     login_url = "https://www.utica.edu/forms/covid-19-screening/index.cfm"
     checkin_url = "https://www.utica.edu/apps/covid-19-screening/covid19screening.cfc?method=insert&pidm=452205&status=S&campus=Y&symptoms=N&_=1631702345870"
+    # Change login URL if desired
     login_url_prompt = input("\nDefault login URL is: \033[32;1;4m" + login_url + "\033[0m\nPress enter to use default, or enter new URL: ")
     if not login_url_prompt.replace(" ", "") == "":
         login_url_prompt = login_url
 
+    # Change checkin URL if desired
     checkin_url_prompt = input("\nDefault checkin URL is: \033[32;1;4m" + checkin_url + "\033[0m\nPress enter to use default, or enter new URL: ")
     if not checkin_url_prompt.replace(" ", "") == "":
         checkin_url_prompt = checkin_url
 
 def setAccountUC():
+    # Init empty vars
+    global UC_user, UC_pass
+    UC_user = ""
+    UC_pass = ""
+
+    # Get UC username from input
     while UC_user == "":
         UC_user_prompt = input("\nEnter username to be used for UC login authentication: ")
         if UC_user_prompt.replace(" ", "") == "":
@@ -80,6 +78,7 @@ def setAccountUC():
         else:
             UC_user = UC_user_prompt
 
+    # Get UC password from input
     while UC_pass == "":
         UC_pass_prompt = getpass("\nEnter password to be used for UC login authentication: ")
         if UC_pass_prompt.replace(" ", "") == "":
@@ -93,6 +92,7 @@ def setAccountUC():
             UC_pass = UC_pass_prompt
 
 def textNotif():
+    # Init vars
     CELL_PROVIDERS = {1 : "vtext.com",              # Verizon
                     2 : "txt.att.net",              # AT&T
                     3 : "sms.cricketwireless.net",  # Cricket Wireless
@@ -106,10 +106,21 @@ def textNotif():
                 "MetroPCS",
                 "T-Mobile",
                 "Consumer Cellular"]
-    while notif == "":
+    # Init empty vars
+    global notifSMS, notif_email, notif_pass, notif_addr, notif_num, carrier
+    notifSMS = ""
+    notif_email = ""
+    notif_pass = ""
+    notif_addr = ""
+    notif_num = ""
+    carrier = ""
+
+    # Asks user if they want SMS notifications
+    while notifSMS == "":
         notif_prompt = input("\nWould you like SMS notifications for successful logins? [Y/n]: ")
         if notif_prompt.replace(" ", "") == "" or notif_prompt.lower() == 'y':
-            notif = True
+            notifSMS = True
+            # Gets email from input
             while notif_email== "":
                 notif_email_prompt = input("\nEnter the email created that can be accessed by smtplib (see README): ")
                 if not "@" in notif_email_prompt:
@@ -117,6 +128,7 @@ def textNotif():
                     continue
                 else:
                     notif_email = notif_email_prompt
+            # Gets password for email account from input
             while notif_pass== "":
                 notif_passwd_prompt = getpass("\nEnter the password for the email created: ")
                 notif_passwd_conf = getpass("Confirm password: ")
@@ -125,6 +137,7 @@ def textNotif():
                     continue
                 else:
                     notif_pass = notif_passwd_prompt
+            # Gets phone number from input
             while notif_num == "":
                 notif_num_prompt = input("\nEnter the phone number to recieve notifications on: ")
                 if notif_num_prompt.startswith("1"):
@@ -135,6 +148,7 @@ def textNotif():
                 for carrier_n in CELL_NAME:
                     print("\t[ " + str(iter) + " ] " + carrier_n)
                     iter += 1
+                # Gets carrier from input
                 while carrier == "":
                     carrier_prompt = input("Select your carrier! (0-" + str(iter - 1) + "): ")
                     if int(carrier_prompt) < 1 or int(carrier_prompt) > iter - 1:
@@ -144,15 +158,21 @@ def textNotif():
                     notif_num = notif_num_prompt + "@" +  carrier
             break
         elif notif_prompt.lower() == 'n':
-            notif = False
+            notifSMS = False
         else:
             print("\033[31;1;1mFailed!\033[0m Invalid Input!")
 
 def setIFTTT():
+    # Init empty vars
+    global notif_ifttt, notif_ifttt_key
+    notif_ifttt = ""
+    notif_ifttt_key = ""
+    # Asks user if they want IFTTT integration
     while notif_ifttt== "":
         notif_ifttt_prompt = input("\nWould you like to enable IFTTT Webhooks integration? (See README)[y/N]: ")
         if notif_ifttt_prompt.lower() == 'y':
             notif_ifttt = True
+            # Gets IFTTT key from input
             while notif_ifttt_key== "":
                 notif_ifttt_key = input("Enter your IFTT Webhooks key (See README): ")
         elif notif_ifttt_prompt.replace(" ", "")== "" or notif_prompt.lower() == 'n':
@@ -160,10 +180,10 @@ def setIFTTT():
         else:
             print("\033[31;1;1mFailed!\033[0m Invalid Input!")
 
-# Moves script file to prog_path
-os.rename(main_file_name + ".py", prog_path + main_file_name + ".py")
-
 def anacronJob():
+    # Init vars
+    cronJob = "1 150 UC-AutoCheckin python3 " + prog_path + main_file_name+ ".py\n"
+    anacron_path="/etc/anacrontab"
     # Checks file to see if script is already in anacrontab, adds it if not.
     anacron = open(anacron_path, 'r')
     if "UC-AutoCheckin" in anacron.read():
@@ -174,21 +194,24 @@ def anacronJob():
         jobExists=False
     anacron.close()
     if not jobExists:
+        # Open anacrontab as "append" (write to the end of file)
         anacron = open(anacron_path, 'a')
         anacron.write(cronJob)
         anacron.close()
         print("Added anacron job")
 
 def configMaker():
+    # Runs each function to set vars
     makePaths()
     setURLs()
     setAccountUC()
     textNotif()
     setIFTTT()
+    # Dumps vars to config
     config_json = json.dumps({"prog_path" : prog_path,
                             "login_url" : login_url,
                             "checkin_url" : checkin_url,
-                            "notify" : notif,
+                            "notify" : notifSMS,
                             "notify_IFTTT" : notif_ifttt,
                             "UC_user" : UC_user,
                             "UC_pass" : UC_pass,
@@ -200,10 +223,15 @@ def configMaker():
     config_file.write(config_json)
     config_file.close()
 
-print("\n\033[32;1;4mAttempting UC-auto-checkin setup...\033[0m\n")
+def main():
+    print("Installing BeautifulSoup4...")
+    subprocess.run(["pip3", "install", "beautifulsoup4"])
+    configMaker()
+    # Moves script file to prog_path
+    os.rename(main_file_name + ".py", prog_path + main_file_name + ".py")
+    anacronJob()
 
-print("Installing BeautifulSoup4...")
-subprocess.run(["pip3", "install", "beautifulsoup4"])
-configMaker()
-anacronJob()
+# Runs main function. Prints when it starts/finished
+print("\n\033[32;1;4mAttempting UC-auto-checkin setup...\033[0m\n")
+main()
 print("\n\033[32;1;1mDone!\033[0m\n")
