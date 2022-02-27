@@ -30,7 +30,8 @@ login_url = "https://www.utica.edu/forms/covid-19-screening/index.cfm"
 checkin_url = "https://www.utica.edu/apps/covid-19-screening/covid19screening.cfc?method=insert&pidm=452205&status=S&campus=Y&symptoms=N&_=1631702345870"
 
 main_file_name = "Auto_Checkin"
-path_to_crontab = "/etc/crontab"
+cronJob = "1 150 UC-AutoCheckin python3 " + prog_path + main_file_name+ ".py\n"
+anacron_path="/etc/anacrontab"
 
 # Vars to be modified later
 prog_path = ""
@@ -60,15 +61,6 @@ while prog_path == "":
         continue
     else:
         prog_path = prog_path_prompt
-
-if not os.path.exists(path_to_crontab):
-    print("Crontab not found at " + path_to_crontab + "!")
-    exit()
-with open(path_to_crontab, "r") as cron:
-    for line in cron:
-        if "cron.daily" in line:
-            mins, hours = line.split(" ")[0], line.split(" ")[1][:2].strip()
-            print("\nLogin will be executed daily at \033[32;1;4m" + hours + ":" + mins + "\033[0m. To change this, edit /etc/crontab")
 
 # pre_main = open(main_file_name, 'r')
 # pre_config_lines = pre_main.readlines()
@@ -183,18 +175,23 @@ config_json = json.dumps({"prog_path" : prog_path,
                         "ifttt_key" : notif_ifttt_key}, indent=1)
 
 
-bash_caller_contents = ["#!/usr/bin/env bash\n",
-                    "\n",
-                    "python3 /home/lame/projects/UC_Auto_Checkin/Final/UC-auto-checkin/Auto_Checkin.py"]
-
-
 os.rename(main_file_name + ".py", prog_path + main_file_name + ".py")
 
-with open("/etc/cron.daily/" + main_file_name, "w") as bash_caller:
-    bash_caller.writelines(bash_caller_contents)
 
-make_executable_cmd = "chmod +x " + "/etc/cron.daily/" + main_file_name
-subprocess.run(make_executable_cmd, shell=True, check=True)
+# Checks file to see if script is already in anacrontab, adds it if not.
+anacron = open(anacron_path, 'r')
+if "UC-AutoCheckin" in anacron.read():
+    print("Job already existed. Use 'crontab -e' to edit.")
+    jobExists=True
+else:
+    print("Adding new cron job...")
+    jobExists=False
+anacron.close()
+if not jobExists:
+    anacron = open(anacron_path, 'a')
+    anacron.write(cronJob)
+    anacron.close()
+    print("Added anacron job")
 
 config_file = open(prog_path + "config.json", "w")
 config_file.write(config_json)
